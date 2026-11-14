@@ -29,3 +29,4 @@ jobs:
           FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
         run: |
           npx firebase-tools deploy --only hosting --project pristine-folder-tc62s --non-interactive
+          
