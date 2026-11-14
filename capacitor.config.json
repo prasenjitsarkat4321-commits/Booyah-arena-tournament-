@@ -1,0 +1,21 @@
+{
+  "appId": "com.booyaharena.esports",
+  "appName": "BOOYAH ARENA",
+  "webDir": "dist",
+  "bundledWebRuntime": false,
+  "server": {
+    "androidScheme": "https",
+    "allowNavigation": [
+      "*.firebaseapp.com",
+      "*.googleapis.com",
+      "*.gstatic.com",
+      "pristine-folder-tc62s.web.app"
+    ]
+  },
+  "android": {
+    "backgroundColor": "#09090b",
+    "allowMixedContent": false,
+    "captureInput": true,
+    "webContentsDebuggingEnabled": false
+  }
+}

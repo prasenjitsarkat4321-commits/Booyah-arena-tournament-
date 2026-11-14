@@ -1,0 +1,565 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Global safety net - default deny everything
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // --- Primitive Helpers ---
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isVerifiedUser() {
+      return isSignedIn() && request.auth.token.email_verified == true;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isAdmin() {
+      return isVerifiedUser() && (
+        request.auth.token.email == 'prasenjitsarkat4321@gmail.com' ||
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid))
+      );
+    }
+
+    // --- Validation Blueprints ---
+    function isValidUser(data, userId) {
+      return data.keys().hasAll([
+          'uid', 'email', 'name', 'ign', 'ffUid',
+          'walletBalance', 'coinsBalance', 'matchesPlayed',
+          'totalKills', 'booyahs', 'joinedTournamentIds',
+          'isBanned', 'role', 'createdAt', 'updatedAt'
+        ])
+        && data.keys().hasOnly([
+          'uid', 'email', 'name', 'username', 'mobileNumber', 'referralCode',
+          'myReferralCode', 'referredByCode', 'referredByUid', 'referralRewardClaimed',
+          'referralCount', 'referralEarningsCoins', 'referralEarningsCash',
+          'ign', 'ffUid', 'walletBalance', 'coinsBalance', 'matchesPlayed',
+          'totalKills', 'booyahs', 'joinedTournamentIds',
+          'claimedDailyRewardDate', 'isBanned', 'role',
+          'createdAt', 'updatedAt'
+        ])
+        && data.uid is string && data.uid == userId && data.uid.size() <= 128
+        && data.email is string && data.email.size() <= 150
+        && data.name is string && data.name.size() >= 1 && data.name.size() <= 80
+        && (!('username' in data) || (data.username is string && data.username.size() >= 2 && data.username.size() <= 40))
+        && (!('mobileNumber' in data) || (data.mobileNumber is string && data.mobileNumber.size() >= 8 && data.mobileNumber.size() <= 20))
+        && (!('referralCode' in data) || (data.referralCode is string && data.referralCode.size() >= 3 && data.referralCode.size() <= 30))
+        && (!('myReferralCode' in data) || (data.myReferralCode is string && data.myReferralCode.size() >= 4 && data.myReferralCode.size() <= 20 && data.myReferralCode.matches('^[A-Z0-9]+$')))
+        && (!('referredByCode' in data) || (data.referredByCode is string && data.referredByCode.size() >= 3 && data.referredByCode.size() <= 30))
+        && (!('referredByUid' in data) || (data.referredByUid is string && data.referredByUid.size() >= 1 && data.referredByUid.size() <= 128))
+        && (!('referralRewardClaimed' in data) || data.referralRewardClaimed is bool)
+        && (!('referralCount' in data) || (data.referralCount is number && data.referralCount >= 0))
+        && (!('referralEarningsCoins' in data) || (data.referralEarningsCoins is number && data.referralEarningsCoins >= 0))
+        && (!('referralEarningsCash' in data) || (data.referralEarningsCash is number && data.referralEarningsCash >= 0))
+        && data.ign is string && data.ign.size() >= 1 && data.ign.size() <= 40
+        && data.ffUid is string && data.ffUid.size() >= 4 && data.ffUid.size() <= 30
+        && data.walletBalance is number && data.walletBalance >= 0 && data.walletBalance <= 1000000
+        && data.coinsBalance is number && data.coinsBalance >= 0 && data.coinsBalance <= 1000000
+        && data.matchesPlayed is number && data.matchesPlayed >= 0
+        && data.totalKills is number && data.totalKills >= 0
+        && data.booyahs is number && data.booyahs >= 0
+        && data.joinedTournamentIds is list && data.joinedTournamentIds.size() <= 200
+        && (data.joinedTournamentIds.size() == 0 || data.joinedTournamentIds[0] is string)
+        && (!('claimedDailyRewardDate' in data) || (data.claimedDailyRewardDate is string && data.claimedDailyRewardDate.size() <= 40))
+        && data.isBanned is bool
+        && data.role is string && data.role in ['player', 'admin']
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidTournament(data) {
+      return data.keys().hasAll([
+          'id', 'title', 'titleHi', 'mode', 'map', 'bannerImage',
+          'prizePool', 'currency', 'entryFee', 'perKillPrize',
+          'firstPlacePrize', 'secondPlacePrize', 'thirdPlacePrize',
+          'totalSlots', 'filledSlots', 'startTime', 'roomUnlocksAt',
+          'status', 'organizer', 'createdByUid', 'isVerified',
+          'deviceType', 'gunAttributes', 'visibility', 'slots', 'rules',
+          'createdAt', 'updatedAt'
+        ])
+        && data.keys().hasOnly([
+          'id', 'title', 'titleHi', 'mode', 'map', 'bannerImage',
+          'prizePool', 'currency', 'entryFee', 'perKillPrize',
+          'firstPlacePrize', 'secondPlacePrize', 'thirdPlacePrize',
+          'totalSlots', 'filledSlots', 'startTime', 'roomId', 'roomPassword',
+          'roomUnlocksAt', 'status', 'organizer', 'createdByUid', 'isVerified',
+          'isFeatured', 'deviceType', 'gunAttributes', 'visibility', 'slots', 'rules',
+          'createdAt', 'updatedAt'
+        ])
+        && data.visibility == 'PUBLIC'
+        && data.id is string && isValidId(data.id)
+        && data.title is string && data.title.size() >= 1 && data.title.size() <= 120
+        && data.titleHi is string && data.titleHi.size() >= 1 && data.titleHi.size() <= 120
+        && data.mode in ['SOLO', 'DUO', 'SQUAD', 'CLASH_SQUAD']
+        && data.map in ['Bermuda', 'Purgatory', 'Kalahari', 'Alpine', 'NexTerra']
+        && data.bannerImage is string && data.bannerImage.size() <= 500
+        && data.prizePool is number && data.prizePool >= 0
+        && data.currency in ['INR', 'COINS']
+        && data.entryFee is number && data.entryFee >= 0
+        && data.perKillPrize is number && data.perKillPrize >= 0
+        && data.firstPlacePrize is number && data.firstPlacePrize >= 0
+        && data.secondPlacePrize is number && data.secondPlacePrize >= 0
+        && data.thirdPlacePrize is number && data.thirdPlacePrize >= 0
+        && data.totalSlots is number && data.totalSlots >= 1 && data.totalSlots <= 64
+        && data.filledSlots is number && data.filledSlots >= 0 && data.filledSlots <= data.totalSlots
+        && data.startTime is string && data.startTime.size() <= 80
+        && (!('roomId' in data) || (data.roomId is string && data.roomId.size() <= 40))
+        && (!('roomPassword' in data) || (data.roomPassword is string && data.roomPassword.size() <= 40))
+        && data.roomUnlocksAt is string && data.roomUnlocksAt.size() <= 80
+        && data.status in ['UPCOMING', 'ROOM_OPEN', 'LIVE', 'COMPLETED']
+        && data.organizer is string && data.organizer.size() <= 80
+        && data.createdByUid is string && data.createdByUid.size() <= 128
+        && data.isVerified is bool
+        && (!('isFeatured' in data) || data.isFeatured is bool)
+        && data.deviceType in ['MOBILE_ONLY', 'ALL_DEVICES']
+        && data.gunAttributes is bool
+        && data.slots is list && data.slots.size() <= 64
+        && data.rules is list && data.rules.size() <= 20
+        && (data.rules.size() == 0 || data.rules[0] is string)
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidDepositRequest(data) {
+      return data.keys().hasAll([
+          'id', 'userId', 'userEmail', 'userName', 'userIgn',
+          'amount', 'upiTransactionId', 'status', 'createdAt', 'updatedAt'
+        ])
+        && data.keys().hasOnly([
+          'id', 'userId', 'userEmail', 'userName', 'userIgn',
+          'amount', 'upiTransactionId', 'payerUpiId', 'status',
+          'adminNote', 'reviewedBy', 'createdAt', 'updatedAt'
+        ])
+        && data.id is string && isValidId(data.id)
+        && data.userId is string && data.userId.size() >= 1 && data.userId.size() <= 128
+        && data.userEmail is string && data.userEmail.size() <= 150
+        && data.userName is string && data.userName.size() <= 80
+        && data.userIgn is string && data.userIgn.size() <= 40
+        && data.amount is number && data.amount >= 10 && data.amount <= 50000
+        && data.upiTransactionId is string && data.upiTransactionId.size() >= 6 && data.upiTransactionId.size() <= 40
+        && (!('payerUpiId' in data) || (data.payerUpiId is string && data.payerUpiId.size() <= 80))
+        && data.status in ['PENDING', 'APPROVED', 'REJECTED']
+        && (!('adminNote' in data) || (data.adminNote is string && data.adminNote.size() <= 200))
+        && (!('reviewedBy' in data) || (data.reviewedBy is string && data.reviewedBy.size() <= 128))
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidWithdrawRequest(data) {
+      return data.keys().hasAll([
+          'id', 'userId', 'userName', 'userIgn', 'amount', 'upiId',
+          'status', 'createdAt', 'updatedAt'
+        ])
+        && data.keys().hasOnly([
+          'id', 'userId', 'userName', 'userIgn', 'amount', 'upiId',
+          'status', 'payoutRef', 'createdAt', 'updatedAt'
+        ])
+        && data.id is string && isValidId(data.id)
+        && data.userId is string && data.userId.size() >= 1 && data.userId.size() <= 128
+        && data.userName is string && data.userName.size() <= 80
+        && data.userIgn is string && data.userIgn.size() <= 40
+        && data.amount is number && data.amount >= 50 && data.amount <= 50000
+        && data.upiId is string && data.upiId.size() >= 5 && data.upiId.size() <= 80
+        && data.status in ['PENDING', 'COMPLETED', 'REJECTED']
+        && (!('payoutRef' in data) || (data.payoutRef is string && data.payoutRef.size() <= 60))
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidTransaction(data) {
+      return data.keys().hasAll([
+          'id', 'userId', 'type', 'amount', 'currency',
+          'description', 'descriptionHi', 'date', 'status', 'createdAt'
+        ])
+        && data.keys().hasOnly([
+          'id', 'userId', 'type', 'amount', 'currency',
+          'description', 'descriptionHi', 'date', 'status',
+          'referenceId', 'createdAt'
+        ])
+        && data.id is string && isValidId(data.id)
+        && data.userId is string && data.userId.size() >= 1 && data.userId.size() <= 128
+        && data.type in ['DEPOSIT', 'WITHDRAW', 'ENTRY_FEE', 'PRIZE_WON', 'DAILY_BONUS', 'REFERRAL_BONUS']
+        && data.amount is number && data.amount >= 0 && data.amount <= 1000000
+        && data.currency in ['INR', 'COINS']
+        && data.description is string && data.description.size() <= 200
+        && data.descriptionHi is string && data.descriptionHi.size() <= 200
+        && data.date is string && data.date.size() <= 60
+        && data.status in ['SUCCESS', 'PENDING', 'FAILED']
+        && (!('referenceId' in data) || (data.referenceId is string && data.referenceId.size() <= 128))
+        && data.createdAt is timestamp;
+    }
+
+    function isValidPaymentSettings(data) {
+      return data.keys().hasAll(['upiId', 'merchantName', 'instructions', 'updatedAt'])
+        && data.keys().hasOnly(['upiId', 'merchantName', 'instructions', 'qrImageUrl', 'updatedAt'])
+        && data.upiId is string && data.upiId.size() >= 5 && data.upiId.size() <= 80
+        && data.merchantName is string && data.merchantName.size() >= 2 && data.merchantName.size() <= 80
+        && data.instructions is string && data.instructions.size() <= 300
+        && (!('qrImageUrl' in data) || (data.qrImageUrl is string && data.qrImageUrl.size() <= 350000))
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidReferralCodeDoc(data, code) {
+      return data.keys().hasAll(['code', 'ownerUid', 'ownerIgn', 'totalUses', 'createdAt', 'updatedAt'])
+        && data.keys().hasOnly(['code', 'ownerUid', 'ownerIgn', 'totalUses', 'createdAt', 'updatedAt'])
+        && data.code is string && data.code == code && data.code.size() >= 4 && data.code.size() <= 20
+        && data.code.matches('^[A-Z0-9]+$')
+        && data.ownerUid is string && data.ownerUid.size() >= 1 && data.ownerUid.size() <= 128
+        && data.ownerIgn is string && data.ownerIgn.size() >= 1 && data.ownerIgn.size() <= 40
+        && data.totalUses is number && data.totalUses >= 0
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidReferralRecord(data, referredUid) {
+      return data.keys().hasAll([
+          'id', 'referrerUid', 'referrerIgn', 'referrerCode',
+          'referredUid', 'referredIgn',
+          'referrerBonusCoins', 'referrerBonusCash',
+          'referredBonusCoins', 'referredBonusCash',
+          'status', 'createdAt'
+        ])
+        && data.keys().hasOnly([
+          'id', 'referrerUid', 'referrerIgn', 'referrerCode',
+          'referredUid', 'referredIgn',
+          'referrerBonusCoins', 'referrerBonusCash',
+          'referredBonusCoins', 'referredBonusCash',
+          'status', 'createdAt'
+        ])
+        && data.id is string && data.id == referredUid
+        && data.referrerUid is string && data.referrerUid.size() >= 1 && data.referrerUid.size() <= 128
+        && data.referrerIgn is string && data.referrerIgn.size() >= 1 && data.referrerIgn.size() <= 40
+        && data.referrerCode is string && data.referrerCode.size() >= 4 && data.referrerCode.size() <= 20
+        && data.referredUid is string && data.referredUid == referredUid
+        && data.referredIgn is string && data.referredIgn.size() >= 1 && data.referredIgn.size() <= 40
+        && data.referrerBonusCoins is number && data.referrerBonusCoins == 50
+        && data.referrerBonusCash is number && data.referrerBonusCash == 10
+        && data.referredBonusCoins is number && data.referredBonusCoins == 50
+        && data.referredBonusCash is number && data.referredBonusCash == 10
+        && data.status == 'CREDITED'
+        && data.createdAt is timestamp;
+    }
+
+    // --- Collection Rules ---
+
+    // 1. Admins directory (read own doc only)
+    match /admins/{adminUid} {
+      allow get: if isValidId(adminUid) && isOwner(adminUid);
+      allow list, create, update, delete: if false;
+    }
+
+    // 2. Users (PII strict owner or admin only)
+    match /users/{userId} {
+      allow get: if isValidId(userId) && (isOwner(userId) || isAdmin());
+      allow list: if isAdmin();
+      allow create: if isValidId(userId)
+        && isVerifiedUser()
+        && isOwner(userId)
+        && isValidUser(incoming(), userId)
+        && incoming().role == 'player'
+        && incoming().walletBalance == 0
+        && incoming().coinsBalance <= 50
+        && (!('referralRewardClaimed' in incoming()) || incoming().referralRewardClaimed == false)
+        && (!('referralCount' in incoming()) || incoming().referralCount == 0)
+        && (!('referralEarningsCoins' in incoming()) || incoming().referralEarningsCoins == 0)
+        && (!('referralEarningsCash' in incoming()) || incoming().referralEarningsCash == 0)
+        && incoming().isBanned == false
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time;
+
+      allow update: if isValidId(userId)
+        && isVerifiedUser()
+        && isValidUser(incoming(), userId)
+        && incoming().uid == existing().uid
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time
+        && (
+          isAdmin() ||
+          (
+            isOwner(userId)
+            && incoming().role == existing().role
+            && incoming().isBanned == existing().isBanned
+            && (
+              // Profile fields update
+              incoming().diff(existing()).affectedKeys().hasOnly(['name', 'username', 'mobileNumber', 'ign', 'ffUid', 'updatedAt']) ||
+              // One-time referral profile fields backfill for legacy accounts
+              (
+                !('myReferralCode' in existing())
+                && incoming().diff(existing()).affectedKeys().hasOnly(['myReferralCode', 'referralCount', 'referralEarningsCoins', 'referralEarningsCash', 'referralRewardClaimed', 'updatedAt'])
+                && incoming().referralCount == 0
+                && incoming().referralEarningsCoins == 0
+                && incoming().referralEarningsCash == 0
+                && incoming().referralRewardClaimed == false
+              ) ||
+              // Daily bonus coins claim (max +50 coins)
+              (
+                incoming().diff(existing()).affectedKeys().hasOnly(['coinsBalance', 'claimedDailyRewardDate', 'updatedAt'])
+                && incoming().coinsBalance <= existing().coinsBalance + 50
+                && incoming().claimedDailyRewardDate != existing().claimedDailyRewardDate
+              ) ||
+              // Slot booking / withdrawal balance deduction (never self-credit INR or coins)
+              (
+                incoming().diff(existing()).affectedKeys().hasOnly(['walletBalance', 'coinsBalance', 'joinedTournamentIds', 'matchesPlayed', 'updatedAt'])
+                && incoming().walletBalance <= existing().walletBalance
+                && incoming().coinsBalance <= existing().coinsBalance
+              ) ||
+              // Cash withdrawal deduction only
+              (
+                incoming().diff(existing()).affectedKeys().hasOnly(['walletBalance', 'updatedAt'])
+                && incoming().walletBalance < existing().walletBalance
+              ) ||
+              // Referred user one-time referral welcome bonus (+₹10 Cash & +50 Coins), atomic with /referrals/{uid}
+              (
+                existing().get('referralRewardClaimed', false) == false
+                && incoming().referralRewardClaimed == true
+                && incoming().diff(existing()).affectedKeys().hasOnly(['walletBalance', 'coinsBalance', 'referredByCode', 'referredByUid', 'referralRewardClaimed', 'updatedAt'])
+                && incoming().walletBalance == existing().walletBalance + 10
+                && incoming().coinsBalance == existing().coinsBalance + 50
+                && !exists(/databases/$(database)/documents/referrals/$(request.auth.uid))
+                && existsAfter(/databases/$(database)/documents/referrals/$(request.auth.uid))
+              )
+            )
+          ) ||
+          (
+            // Referrer automatic reward credit (+₹10 Cash & +50 Coins), atomic with new friend's /referrals/{referredUid}
+            request.auth.uid != userId
+            && incoming().role == existing().role
+            && incoming().isBanned == existing().isBanned
+            && incoming().diff(existing()).affectedKeys().hasOnly(['walletBalance', 'coinsBalance', 'referralCount', 'referralEarningsCoins', 'referralEarningsCash', 'updatedAt'])
+            && incoming().walletBalance == existing().walletBalance + 10
+            && incoming().coinsBalance == existing().coinsBalance + 50
+            && incoming().referralCount == existing().get('referralCount', 0) + 1
+            && incoming().referralEarningsCoins == existing().get('referralEarningsCoins', 0) + 50
+            && incoming().referralEarningsCash == existing().get('referralEarningsCash', 0) + 10
+            && !exists(/databases/$(database)/documents/referrals/$(request.auth.uid))
+            && getAfter(/databases/$(database)/documents/referrals/$(request.auth.uid)).data.referrerUid == userId
+          )
+        );
+      allow delete: if false;
+    }
+
+    // 3. Tournaments (Real-time catalog synced across all users)
+    match /tournaments/{tournamentId} {
+      allow get: if isValidId(tournamentId) && resource.data.visibility == 'PUBLIC';
+      allow list: if resource.data.visibility == 'PUBLIC';
+
+      allow create: if isValidId(tournamentId)
+        && isVerifiedUser()
+        && isValidTournament(incoming())
+        && incoming().id == tournamentId
+        && incoming().createdByUid == request.auth.uid
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time
+        && (isAdmin() || incoming().isVerified == false);
+
+      allow update: if isValidId(tournamentId)
+        && isVerifiedUser()
+        && isValidTournament(incoming())
+        && incoming().id == existing().id
+        && incoming().createdByUid == existing().createdByUid
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time
+        && (
+          isAdmin() ||
+          (
+            existing().status in ['UPCOMING', 'ROOM_OPEN']
+            && incoming().diff(existing()).affectedKeys().hasOnly(['slots', 'filledSlots', 'updatedAt'])
+            && incoming().filledSlots == existing().filledSlots + 1
+            && incoming().filledSlots <= existing().totalSlots
+          )
+        );
+
+      allow delete: if isValidId(tournamentId) && isAdmin();
+    }
+
+    // 4. Deposit Requests (Manual UPI QR & Transaction ID submit -> Admin approval)
+    match /depositRequests/{requestId} {
+      allow get: if isValidId(requestId) && (isAdmin() || (isSignedIn() && existing().userId == request.auth.uid));
+      allow list: if isAdmin() || (isSignedIn() && resource.data.userId == request.auth.uid);
+
+      allow create: if isValidId(requestId)
+        && isVerifiedUser()
+        && isValidDepositRequest(incoming())
+        && incoming().id == requestId
+        && incoming().userId == request.auth.uid
+        && incoming().status == 'PENDING'
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time;
+
+      allow update: if isValidId(requestId)
+        && isAdmin()
+        && isValidDepositRequest(incoming())
+        && existing().status == 'PENDING'
+        && incoming().status in ['APPROVED', 'REJECTED']
+        && incoming().id == existing().id
+        && incoming().userId == existing().userId
+        && incoming().amount == existing().amount
+        && incoming().upiTransactionId == existing().upiTransactionId
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time;
+
+      allow delete: if false;
+    }
+
+    // 5. Withdrawal Requests
+    match /withdrawRequests/{requestId} {
+      allow get: if isValidId(requestId) && (isAdmin() || (isSignedIn() && existing().userId == request.auth.uid));
+      allow list: if isAdmin() || (isSignedIn() && resource.data.userId == request.auth.uid);
+
+      allow create: if isValidId(requestId)
+        && isVerifiedUser()
+        && isValidWithdrawRequest(incoming())
+        && incoming().id == requestId
+        && incoming().userId == request.auth.uid
+        && incoming().status == 'PENDING'
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time;
+
+      allow update: if isValidId(requestId)
+        && isAdmin()
+        && isValidWithdrawRequest(incoming())
+        && existing().status == 'PENDING'
+        && incoming().status in ['COMPLETED', 'REJECTED']
+        && incoming().id == existing().id
+        && incoming().userId == existing().userId
+        && incoming().amount == existing().amount
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time;
+
+      allow delete: if false;
+    }
+
+    // 6. Wallet Passbook Transactions
+    match /transactions/{txId} {
+      allow get: if isValidId(txId) && (isAdmin() || (isSignedIn() && existing().userId == request.auth.uid));
+      allow list: if isAdmin() || (isSignedIn() && resource.data.userId == request.auth.uid);
+
+      allow create: if isValidId(txId)
+        && isVerifiedUser()
+        && isValidTransaction(incoming())
+        && incoming().id == txId
+        && incoming().createdAt == request.time
+        && (
+          isAdmin() ||
+          (
+            incoming().userId == request.auth.uid
+            && (
+              (incoming().type == 'ENTRY_FEE' && incoming().status == 'SUCCESS') ||
+              (incoming().type == 'DAILY_BONUS' && incoming().status == 'SUCCESS' && incoming().currency == 'COINS' && incoming().amount <= 50) ||
+              (incoming().type == 'WITHDRAW' && incoming().status == 'PENDING') ||
+              (incoming().type == 'DEPOSIT' && incoming().status == 'PENDING')
+            )
+          ) ||
+          (
+            incoming().type == 'REFERRAL_BONUS'
+            && incoming().status == 'SUCCESS'
+            && (
+              (incoming().currency == 'COINS' && incoming().amount == 50) ||
+              (incoming().currency == 'INR' && incoming().amount == 10)
+            )
+            && !exists(/databases/$(database)/documents/referrals/$(request.auth.uid))
+            && existsAfter(/databases/$(database)/documents/referrals/$(request.auth.uid))
+            && (
+              incoming().userId == request.auth.uid ||
+              incoming().userId == getAfter(/databases/$(database)/documents/referrals/$(request.auth.uid)).data.referrerUid
+            )
+          )
+        );
+
+      allow update: if isValidId(txId)
+        && isAdmin()
+        && isValidTransaction(incoming())
+        && incoming().id == existing().id
+        && incoming().userId == existing().userId
+        && incoming().createdAt == existing().createdAt;
+
+      allow delete: if false;
+    }
+
+    // 7. Platform Payment Settings (UPI QR Configuration)
+    match /platformConfig/{configId} {
+      allow get: if isValidId(configId) && (configId == 'paymentSettings' || isSignedIn());
+      allow list: if false;
+      allow create, update: if isValidId(configId)
+        && isAdmin()
+        && isValidPaymentSettings(incoming())
+        && incoming().updatedAt == request.time;
+      allow delete: if false;
+    }
+
+    // 8. Public Non-PII Referral Code Directory
+    match /referralCodes/{code} {
+      allow get: if isValidId(code);
+      allow list: if false;
+
+      allow create: if isValidId(code)
+        && isVerifiedUser()
+        && isValidReferralCodeDoc(incoming(), code)
+        && incoming().ownerUid == request.auth.uid
+        && incoming().totalUses == 0
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time;
+
+      allow update: if isValidId(code)
+        && isVerifiedUser()
+        && isValidReferralCodeDoc(incoming(), code)
+        && incoming().code == existing().code
+        && incoming().ownerUid == existing().ownerUid
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time
+        && (
+          isAdmin() ||
+          (
+            existing().ownerUid != request.auth.uid
+            && incoming().diff(existing()).affectedKeys().hasOnly(['totalUses', 'updatedAt'])
+            && incoming().totalUses == existing().totalUses + 1
+            && !exists(/databases/$(database)/documents/referrals/$(request.auth.uid))
+            && existsAfter(/databases/$(database)/documents/referrals/$(request.auth.uid))
+          )
+        );
+
+      allow delete: if false;
+    }
+
+    // 9. Immutable Referral Reward Records
+    match /referrals/{referredUid} {
+      allow get: if isValidId(referredUid) && (
+        isAdmin() ||
+        (isSignedIn() && (referredUid == request.auth.uid || existing().referrerUid == request.auth.uid))
+      );
+      allow list: if isAdmin() || (
+        isSignedIn() && (resource.data.referrerUid == request.auth.uid || resource.data.referredUid == request.auth.uid)
+      );
+
+      allow create: if isValidId(referredUid)
+        && isVerifiedUser()
+        && referredUid == request.auth.uid
+        && isValidReferralRecord(incoming(), referredUid)
+        && incoming().referrerUid != request.auth.uid
+        && incoming().createdAt == request.time
+        && exists(/databases/$(database)/documents/referralCodes/$(incoming().referrerCode))
+        && get(/databases/$(database)/documents/referralCodes/$(incoming().referrerCode)).data.ownerUid == incoming().referrerUid
+        && existsAfter(/databases/$(database)/documents/users/$(request.auth.uid));
+
+      allow update, delete: if false;
+    }
+  }
+}

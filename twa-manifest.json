@@ -1,0 +1,57 @@
+{
+  "packageId": "com.booyaharena.esports",
+  "host": "pristine-folder-tc62s.web.app",
+  "name": "BOOYAH ARENA",
+  "launcherName": "Booyah Arena",
+  "display": "standalone",
+  "themeColor": "#f97316",
+  "themeColorDark": "#09090b",
+  "navigationColor": "#09090b",
+  "navigationColorDark": "#09090b",
+  "navigationDividerColor": "#27272a",
+  "navigationDividerColorDark": "#27272a",
+  "backgroundColor": "#09090b",
+  "enableNotifications": true,
+  "startUrl": "/",
+  "iconUrl": "https://pristine-folder-tc62s.web.app/pwa-512x512.png",
+  "maskableIconUrl": "https://pristine-folder-tc62s.web.app/pwa-maskable-512x512.png",
+  "splashScreenFadeOutDuration": 300,
+  "signingKey": {
+    "path": "./android.keystore",
+    "alias": "booyaharena"
+  },
+  "appVersionName": "1.0.0",
+  "appVersionCode": 1,
+  "shortcuts": [
+    {
+      "name": "Live Tournaments",
+      "shortName": "Matches",
+      "url": "https://pristine-folder-tc62s.web.app/",
+      "chosenIconUrl": "https://pristine-folder-tc62s.web.app/pwa-192x192.png"
+    },
+    {
+      "name": "Wallet & UPI",
+      "shortName": "Wallet",
+      "url": "https://pristine-folder-tc62s.web.app/?tab=wallet",
+      "chosenIconUrl": "https://pristine-folder-tc62s.web.app/pwa-192x192.png"
+    }
+  ],
+  "generatorApp": "bubblewrap-cli",
+  "webManifestUrl": "https://pristine-folder-tc62s.web.app/manifest.json",
+  "fallbackType": "customtabs",
+  "features": {},
+  "alphaDependencies": {
+    "enabled": false
+  },
+  "enableSiteSettingsShortcut": true,
+  "isChromeOSOnly": false,
+  "isMetaQuest": false,
+  "fullScopeUrl": "https://pristine-folder-tc62s.web.app/",
+  "minSdkVersion": 21,
+  "orientation": "portrait-primary",
+  "fingerprints": [],
+  "additionalTrustedOrigins": [
+    "https://pristine-folder-tc62s.firebaseapp.com"
+  ],
+  "retainedBundles": []
+}

@@ -1,0 +1,6 @@
+{
+  "name": "BooyahArena - Free Fire Esports Tournaments",
+  "description": "Premier Free Fire tournament platform for Solo, Duo & Squad scrims, custom rooms, real-time slot booking, live leaderboards, and instant prize rewards.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

@@ -1,0 +1,57 @@
+{
+  "id": "/",
+  "name": "BOOYAH ARENA",
+  "short_name": "Booyah Arena",
+  "description": "Free Fire eSports Tournament App",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "display_override": ["standalone", "minimal-ui"],
+  "orientation": "portrait-primary",
+  "lang": "en",
+  "dir": "ltr",
+  "theme_color": "#f97316",
+  "background_color": "#09090b",
+  "prefer_related_applications": false,
+  "categories": ["games", "sports", "entertainment"],
+  "icons": [
+    {
+      "src": "/pwa-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/pwa-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/pwa-maskable-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/pwa-maskable-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Live Tournaments",
+      "short_name": "Matches",
+      "url": "/",
+      "icons": [{ "src": "/pwa-192x192.png", "sizes": "192x192", "type": "image/png" }]
+    },
+    {
+      "name": "Wallet & UPI",
+      "short_name": "Wallet",
+      "url": "/?tab=wallet",
+      "icons": [{ "src": "/pwa-192x192.png", "sizes": "192x192", "type": "image/png" }]
+    }
+  ]
+}
