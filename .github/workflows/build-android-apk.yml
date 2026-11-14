@@ -17,7 +17,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
 
       - name: Setup Java 21
         uses: actions/setup-java@v4
@@ -25,12 +25,25 @@ jobs:
           distribution: 'temurin'
           java-version: '21'
 
-      - name: Setup Android SDK
-        uses: android-actions/setup-android@v3
+      - name: Configure Pre-installed Android SDK
+        run: |
+          SDK_DIR="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-/usr/local/lib/android/sdk}}"
+          if [ ! -d "$SDK_DIR" ]; then
+            echo "Android SDK directory not found at $SDK_DIR"
+            exit 1
+          fi
+          echo "ANDROID_HOME=$SDK_DIR" >> "$GITHUB_ENV"
+          echo "ANDROID_SDK_ROOT=$SDK_DIR" >> "$GITHUB_ENV"
+          echo "$SDK_DIR/platform-tools" >> "$GITHUB_PATH"
+          if [ -d "$SDK_DIR/cmdline-tools/latest/bin" ]; then
+            echo "$SDK_DIR/cmdline-tools/latest/bin" >> "$GITHUB_PATH"
+            yes | "$SDK_DIR/cmdline-tools/latest/bin/sdkmanager" --licenses >/dev/null 2>&1 || true
+          fi
+          echo "Using Android SDK at: $SDK_DIR"
 
       - name: Install web dependencies & build dist
         run: |
-          npm ci || npm install
+          npm install
           npm run build
 
       - name: Initialize Capacitor Android & Copy Icons
@@ -38,7 +51,9 @@ jobs:
           npm install --no-save @capacitor/core @capacitor/cli @capacitor/android
           npx cap add android || true
           npx cap sync android
-          mkdir -p android/app/src/main/res/drawable
+          echo "sdk.dir=$ANDROID_HOME" > android/local.properties
+          mkdir -p android/app/src/main/res/mipmap-xxhdpi android/app/src/main/res/mipmap-xxxhdpi
+          cp public/pwa-192x192.png android/app/src/main/res/mipmap-xxhdpi/ic_launcher.png || true
           cp public/pwa-512x512.png android/app/src/main/res/mipmap-xxxhdpi/ic_launcher.png || true
           cp public/pwa-512x512.png android/app/src/main/res/mipmap-xxxhdpi/ic_launcher_round.png || true
 
@@ -46,7 +61,7 @@ jobs:
         working-directory: android
         run: |
           chmod +x gradlew
-          ./gradlew assembleDebug
+          ./gradlew assembleDebug --no-daemon
 
       - name: Upload BOOYAH ARENA APK Artifact
         uses: actions/upload-artifact@v4
