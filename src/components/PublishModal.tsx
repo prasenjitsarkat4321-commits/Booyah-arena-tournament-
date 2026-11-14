@@ -26,14 +26,14 @@ interface PublishModalProps {
 
 const FIREBASE_PROJECT_HOSTING_URL = 'https://pristine-folder-tc62s.web.app';
 
-const FIREBASE_DEPLOY_COMMANDS = `npm install
+const FIREBASE_DEPLOY_COMMANDS = `npm install --legacy-peer-deps
 npm run build
 npx firebase-tools login
 npx firebase-tools deploy --only hosting`;
 
-const CAPACITOR_COMMANDS = `npm install
+const CAPACITOR_COMMANDS = `npm install --legacy-peer-deps
 npm run build
-npm install --no-save @capacitor/core @capacitor/cli @capacitor/android
+npm install --no-save --legacy-peer-deps @capacitor/core @capacitor/cli @capacitor/android
 npx cap add android
 npx cap sync android
 npx cap open android`;
